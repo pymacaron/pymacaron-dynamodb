@@ -211,7 +211,7 @@ class PersistentSwaggerObject():
         item = childclass.api.json_to_model(childclass.model_name, item)
 
         # Monkey-patch this model so we can store it later
-        model.save_to_db = types.MethodType(childclass.save_to_db, model)
+        item.save_to_db = types.MethodType(childclass.save_to_db, item)
 
         log.info("Loaded %s from table %s: %s" % (childclass.model_name, childclass.table_name, pprint.pformat(item, indent=4)))
         return item
