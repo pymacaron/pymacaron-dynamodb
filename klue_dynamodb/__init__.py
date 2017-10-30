@@ -3,8 +3,6 @@ import boto3
 import json
 import pprint
 import types
-import pytz
-import dateutil
 from klue.swagger.apipool import ApiPool
 from klue_microservice.config import get_config
 from klue_microservice.exceptions import KlueMicroServiceException
