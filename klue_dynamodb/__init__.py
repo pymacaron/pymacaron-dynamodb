@@ -180,12 +180,7 @@ class PersistentSwaggerObject():
         if 'Item' not in response:
             raise DynamoDBItemNotFound("Table %s has no item with %s=%s" % (childclass.table_name, childclass.primary_key, key))
 
-        model = childclass.to_model(response['Item'])
-
-        # Monkey-patch this model so we can store it later
-        model.save_to_db = types.MethodType(childclass.save_to_db, model)
-
-        return model
+        return childclass.to_model(response['Item'])
 
 
     def save_to_db(self):
@@ -204,7 +199,6 @@ class PersistentSwaggerObject():
         PersistentSwaggerObject.setup(childclass)
 
         # Normalize DynamoDB dict into Swagger json dict
-        log.debug("Normalizing dict: " + pprint.pformat(item))
         spec = childclass.api.api_spec.swagger_dict
         item = _normalize_dict(
             childclass.api,
@@ -212,10 +206,12 @@ class PersistentSwaggerObject():
             spec['definitions'][childclass.model_name]['properties'],
             item
         )
-        log.debug("_normalize_dict returns: %s" % pprint.pformat(item, indent=4))
 
         # Convert from python dict to Swagger object
         item = childclass.api.json_to_model(childclass.model_name, item)
 
-        log.info("Loaded %s from table %s: %s" % (childclass.model_name, childclass.table_name, item))
+        # Monkey-patch this model so we can store it later
+        model.save_to_db = types.MethodType(childclass.save_to_db, model)
+
+        log.info("Loaded %s from table %s: %s" % (childclass.model_name, childclass.table_name, pprint.pformat(item, indent=4)))
         return item
