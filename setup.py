@@ -47,7 +47,7 @@ setup(
         'mock',
         'pep8'
         'klue-unit',
-        'klue-microservice-dynamodb',
+        'klue-microservice',
     ],
     packages=['klue_dynamodb'],
     test_suite='nose.collector',
