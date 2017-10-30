@@ -1,6 +1,10 @@
 import logging
 import boto3
 import json
+import pprint
+import types
+import pytz
+import dateutil
 from klue.swagger.apipool import ApiPool
 from klue_microservice.config import get_config
 from klue_microservice.exceptions import KlueMicroServiceException
@@ -31,12 +35,83 @@ class DynamoDBItemNotFound(KlueMicroServiceException):
     pass
 
 #
+# Recursively map a dynamodb dict into a swagger dict
+#
+
+def _normalize_item(spec, v):
+    if spec['type'].lower() == 'boolean':
+        v = True if v else False
+    elif spec['type'].lower() == 'number':
+        v = float(v)
+    elif spec['type'].lower() == 'integer':
+        v = int(v)
+    return v
+
+
+def _normalize_object(api, definitions, ref, v):
+    assert isinstance(v, dict), "should be a dictionary: %s" % v
+    model_name = ref.split('/')[-1]
+    log.debug("Normalizing dict of type %s" % model_name)
+    v = _normalize_dict(api, definitions, definitions[model_name]['properties'], v)
+    return v
+
+
+def _normalize_list(api, definitions, items, l):
+    # items looks like:
+    # {   '$ref': '#/definitions/UserPicture',
+    #     'x-scope': [...]
+    # }
+    # or:
+    #
+
+    l = list(l)
+    # log.debug("Normalizing list: " + pprint.pformat(l))
+    ll = []
+
+    for v in l:
+        if '$ref' in items:
+            log.debug("Normalizing array item: %s" % pprint.pformat(v, indent=4))
+            v = _normalize_object(api, definitions, items['$ref'], v)
+        else:
+            assert 0, "Not implemented"
+#         elif k_spec['type'].lower() == 'array':
+#             assert isinstance(v, list), "should be a list: %s" % v
+#             log.debug("Normalizing array: %s" % pprint.pformat(v, indent=4))
+#             log.debug("Normalizing array has spec: %s" % pprint.pformat(k_spec, indent=4))
+#             v = _normalize_list(api, definitions, k_spec['items'], v)
+#         else:
+#             v = _normalize_item(v)
+
+        ll.append(v)
+    return ll
+
+
+def _normalize_dict(api, definitions, model_properties, d):
+    d = dict(d)
+
+    # Go through all keys in dict and normalize DynamoDB types to json
+    for k, v in list(d.items()):
+
+        k_spec = model_properties[k]
+
+        if '$ref' in k_spec:
+            v = _normalize_object(api, definitions, k_spec['$ref'], v)
+        elif k_spec['type'].lower() == 'array':
+            assert isinstance(v, list), "should be a list: %s" % v
+            v = _normalize_list(api, definitions, k_spec['items'], v)
+        else:
+            v = _normalize_item(k_spec, v)
+
+        d[k] = v
+    return d
+
+
+#
 # Take a Swagger JSON dict and persist it to/from dynamodb
 #
 
 
 model_to_persistent_class = {}
-
 
 class PersistentSwaggerObject():
 
@@ -105,7 +180,12 @@ class PersistentSwaggerObject():
         if 'Item' not in response:
             raise DynamoDBItemNotFound("Table %s has no item with %s=%s" % (childclass.table_name, childclass.primary_key, key))
 
-        return childclass.to_model(response['Item'])
+        model = childclass.to_model(response['Item'])
+
+        # Monkey-patch this model so we can store it later
+        model.save_to_db = types.MethodType(childclass.save_to_db, model)
+
+        return model
 
 
     def save_to_db(self):
@@ -115,14 +195,27 @@ class PersistentSwaggerObject():
 
         j = childclass.api.model_to_json(self)
         log.debug("Storing json into DynamoDB/%s: %s" % (childclass.table_name, json.dumps(j, indent=2)))
+
         childclass.table.put_item(Item=j)
 
 
     @classmethod
     def to_model(childclass, item):
         PersistentSwaggerObject.setup(childclass)
-        # TODO: convert from dynamodb format to python dict
+
+        # Normalize DynamoDB dict into Swagger json dict
+        log.debug("Normalizing dict: " + pprint.pformat(item))
+        spec = childclass.api.api_spec.swagger_dict
+        item = _normalize_dict(
+            childclass.api,
+            spec['definitions'],
+            spec['definitions'][childclass.model_name]['properties'],
+            item
+        )
+        log.debug("_normalize_dict returns: %s" % pprint.pformat(item, indent=4))
+
         # Convert from python dict to Swagger object
-        m = childclass.model(**item)
-        log.info("Loaded from %s the object %s" % (childclass.table_name, m))
-        return m
+        item = childclass.api.json_to_model(childclass.model_name, item)
+
+        log.info("Loaded %s from table %s: %s" % (childclass.model_name, childclass.table_name, item))
+        return item
