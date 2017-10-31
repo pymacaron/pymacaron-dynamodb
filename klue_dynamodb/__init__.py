@@ -26,7 +26,7 @@ def get_dynamodb():
             aws_secret_access_key=conf.aws_secret_access_key
         )
 
-        return db
+    return db
 
 # Exception raised if no item found
 class DynamoDBItemNotFound(KlueMicroServiceException):
