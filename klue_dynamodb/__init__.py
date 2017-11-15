@@ -113,6 +113,8 @@ model_to_persistent_class = {}
 
 class PersistentSwaggerObject():
 
+
+
     @staticmethod
     def setup(childclass):
         # A child class should override the following class attributes
@@ -181,10 +183,24 @@ class PersistentSwaggerObject():
         return childclass.to_model(response['Item'])
 
 
+    @classmethod
+    def import_childclass(self, object):
+        components = object.__persistence_class__.split('.')
+        mod = __import__(components[0])
+        for comp in components[1:]:
+            mod = getattr(mod, comp)
+        return mod
+
+
     def save_to_db(self):
         global model_to_persistent_class
+
+        # Do we need to run setup on the persistence class?
+        if self.__class__.__name__ not in model_to_persistent_class:
+            c = PersistentSwaggerObject.import_childclass(self)
+            c.setup(c)
+
         childclass = model_to_persistent_class[self.__class__.__name__]
-        PersistentSwaggerObject.setup(childclass)
 
         j = childclass.api.model_to_json(self)
         log.debug("Storing json into DynamoDB/%s: %s" % (childclass.table_name, json.dumps(j, indent=2)))
@@ -195,6 +211,9 @@ class PersistentSwaggerObject():
     @classmethod
     def to_model(childclass, item):
         PersistentSwaggerObject.setup(childclass)
+
+        if '__persistence_class__' in item:
+            del item['__persistence_class__']
 
         # Normalize DynamoDB dict into Swagger json dict
         spec = childclass.api.api_spec.swagger_dict
