@@ -49,7 +49,7 @@ def _normalize_item(spec, v):
 def _normalize_object(api, definitions, ref, v):
     assert isinstance(v, dict), "should be a dictionary: %s" % v
     model_name = ref.split('/')[-1]
-    log.debug("Normalizing dict of type %s" % model_name)
+    # log.debug("Normalizing dict of type %s" % model_name)
     v = _normalize_dict(api, definitions, definitions[model_name]['properties'], v)
     return v
 
@@ -68,9 +68,12 @@ def _normalize_list(api, definitions, items, l):
 
     for v in l:
         if '$ref' in items:
-            log.debug("Normalizing array item: %s" % pprint.pformat(v, indent=4))
+            # log.debug("Normalizing array item: %s" % pprint.pformat(v, indent=4))
             v = _normalize_object(api, definitions, items['$ref'], v)
+        elif 'type' in items and items['type'] in ('string', 'boolean', 'integer'):
+            v = _normalize_item(items, v)
         else:
+            log.debug("items is %s" % items)
             assert 0, "Not implemented"
 #         elif k_spec['type'].lower() == 'array':
 #             assert isinstance(v, list), "should be a list: %s" % v
@@ -230,5 +233,5 @@ class PersistentSwaggerObject():
         # Monkey-patch this model so we can store it later
         item.save_to_db = types.MethodType(childclass.save_to_db, item)
 
-        log.info("Loaded %s from table %s: %s" % (childclass.model_name, childclass.table_name, pprint.pformat(item, indent=4)))
+        # log.info("Loaded %s from table %s: %s" % (childclass.model_name, childclass.table_name, pprint.pformat(item, indent=4)))
         return item
