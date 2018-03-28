@@ -206,7 +206,7 @@ class PersistentSwaggerObject():
         childclass = model_to_persistent_class[self.__class__.__name__]
 
         j = childclass.api.model_to_json(self)
-        log.debug("Storing json into DynamoDB/%s: %s" % (childclass.table_name, json.dumps(j, indent=2)))
+        # log.debug("Storing json into DynamoDB/%s: %s" % (childclass.table_name, json.dumps(j, indent=2)))
 
         childclass.table.put_item(Item=j)
 
