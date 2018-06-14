@@ -93,6 +93,10 @@ def _normalize_dict(api, definitions, model_properties, d):
     # Go through all keys in dict and normalize DynamoDB types to json
     for k, v in list(d.items()):
 
+        if k not in model_properties:
+            log.warn("Don't know how to map dynamodb attribute %s onto model" % k)
+            pass
+
         k_spec = model_properties[k]
 
         if '$ref' in k_spec:
