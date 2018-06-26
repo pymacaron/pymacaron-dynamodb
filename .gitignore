@@ -1,5 +1,7 @@
 dist/
-klue_microservice_dynamodb.egg-info/
+pymacaron_core
+pymacaron
+pymacaron_dynamodb.egg-info/
 **/__pycache__
 *.tar
 **/*.pyc

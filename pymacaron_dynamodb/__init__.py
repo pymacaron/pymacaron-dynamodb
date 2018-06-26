@@ -1,11 +1,9 @@
 import logging
 import boto3
-import json
-import pprint
 import types
-from klue.swagger.apipool import ApiPool
-from klue_microservice.config import get_config
-from klue_microservice.exceptions import KlueMicroServiceException
+from pymacaron_core.swagger.apipool import ApiPool
+from pymacaron.config import get_config
+from pymacaron.exceptions import PyMacaronException
 
 
 log = logging.getLogger(__name__)
@@ -29,7 +27,7 @@ def get_dynamodb():
     return db
 
 # Exception raised if no item found
-class DynamoDBItemNotFound(KlueMicroServiceException):
+class DynamoDBItemNotFound(PyMacaronException):
     pass
 
 #
@@ -62,11 +60,11 @@ def _normalize_list(api, definitions, items, l):
     # or:
     #
 
-    l = list(l)
+    lst = list(l)
     # log.debug("Normalizing list: " + pprint.pformat(l))
     ll = []
 
-    for v in l:
+    for v in lst:
         if '$ref' in items:
             # log.debug("Normalizing array item: %s" % pprint.pformat(v, indent=4))
             v = _normalize_object(api, definitions, items['$ref'], v)
@@ -114,7 +112,6 @@ def _normalize_dict(api, definitions, model_properties, d):
 #
 # Take a Swagger JSON dict and persist it to/from dynamodb
 #
-
 
 model_to_persistent_class = {}
 

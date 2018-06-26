@@ -1,7 +1,6 @@
 from setuptools import setup
 import sys
 import os
-from glob import glob
 
 version = None
 
@@ -31,25 +30,26 @@ if version:
 print("version: %s" % version)
 
 setup(
-    name='klue-microservice-dynamodb',
+    name='pymacaron-dynamodb',
     version=version,
-    url='https://github.com/erwan-lemonnier/klue-microservice-dynamodb',
+    url='https://github.com/pymacaron/pymacaron-dynamodb',
     license='BSD',
     author='Erwan Lemonnier',
     author_email='erwan@lemonnier.se',
     description='Serialize/Deserialize Swagger JSON objects to and from DynamoDB, with transactional writes',
     install_requires=[
-        'klue-unit',
-        'klue-microservice',
-	'boto3',
+        'pymacaron-unit',
+        'pymacaron',
+        'boto3',
     ],
     tests_require=[
+        'nose',
         'mock',
-        'pep8'
-        'klue-unit',
-        'klue-microservice',
+        'pycodestyle',
+        'pymacaron-unit',
+        'pymacaron',
     ],
-    packages=['klue_dynamodb'],
+    packages=['pymacaron_dynamodb'],
     test_suite='nose.collector',
     zip_safe=False,
     platforms='any',
