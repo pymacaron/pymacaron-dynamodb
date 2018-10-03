@@ -93,7 +93,7 @@ def _normalize_dict(api, definitions, model_properties, d):
 
         if k not in model_properties:
             log.warn("Don't know how to map dynamodb attribute %s onto model" % k)
-            pass
+            continue
 
         k_spec = model_properties[k]
 
