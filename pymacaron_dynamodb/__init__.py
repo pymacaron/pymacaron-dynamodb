@@ -93,19 +93,20 @@ def _normalize_dict(api, definitions, model_properties, d):
 
         if k not in model_properties:
             log.warn("Don't know how to map dynamodb attribute %s onto model" % k)
-            continue
-
-        k_spec = model_properties[k]
-
-        if '$ref' in k_spec:
-            v = _normalize_object(api, definitions, k_spec['$ref'], v)
-        elif k_spec['type'].lower() == 'array':
-            assert isinstance(v, list), "should be a list: %s" % v
-            v = _normalize_list(api, definitions, k_spec['items'], v)
         else:
-            v = _normalize_item(k_spec, v)
 
-        d[k] = v
+            k_spec = model_properties[k]
+
+            if '$ref' in k_spec:
+                v = _normalize_object(api, definitions, k_spec['$ref'], v)
+            elif k_spec['type'].lower() == 'array':
+                assert isinstance(v, list), "should be a list: %s" % v
+                v = _normalize_list(api, definitions, k_spec['items'], v)
+            else:
+                v = _normalize_item(k_spec, v)
+
+            d[k] = v
+
     return d
 
 
