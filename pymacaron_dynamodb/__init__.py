@@ -4,6 +4,7 @@ import types
 from pymacaron_core.swagger.apipool import ApiPool
 from pymacaron.config import get_config
 from pymacaron.exceptions import PyMacaronException
+from pymacaron.monitor import monitor
 
 
 log = logging.getLogger(__name__)
@@ -174,18 +175,23 @@ class PersistentSwaggerObject():
 
     @classmethod
     def load_from_db(childclass, key):
+
         PersistentSwaggerObject.setup(childclass)
 
-        response = childclass.table.get_item(
-            Key={
-                childclass.primary_key: key,
-            }
-        )
+        response = None
+        with monitor(kind='DynamoDB', method='save_to_db'):
+            response = childclass.table.get_item(
+                Key={
+                    childclass.primary_key: key,
+                }
+            )
 
         if 'Item' not in response:
             raise DynamoDBItemNotFound("Table %s has no item with %s=%s" % (childclass.table_name, childclass.primary_key, key))
 
         return childclass.to_model(response['Item'])
+
+
 
 
     @classmethod
@@ -210,7 +216,8 @@ class PersistentSwaggerObject():
         j = childclass.api.model_to_json(self)
         # log.debug("Storing json into DynamoDB/%s: %s" % (childclass.table_name, json.dumps(j, indent=2)))
 
-        childclass.table.put_item(Item=j)
+        with monitor(kind='DynamoDB', method='save_to_db'):
+            childclass.table.put_item(Item=j)
 
 
     @classmethod
