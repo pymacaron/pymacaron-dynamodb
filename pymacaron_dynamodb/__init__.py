@@ -27,6 +27,7 @@ def get_dynamodb():
 
     return db
 
+
 # Exception raised if no item found
 class DynamoDBItemNotFound(PyMacaronException):
     pass
@@ -179,7 +180,7 @@ class PersistentSwaggerObject():
         PersistentSwaggerObject.setup(childclass)
 
         response = None
-        with monitor(kind='DynamoDB', method='save_to_db'):
+        with monitor(kind='DynamoDB', method='load_from_db'):
             response = childclass.table.get_item(
                 Key={
                     childclass.primary_key: key,
