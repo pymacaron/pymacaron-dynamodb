@@ -17,10 +17,11 @@ def get_dynamodb():
     global db
     if not db:
         conf = get_config()
-        log.info("Dynamodb setup against region:%s access_key_id:%s, aws_secret:%s***" % (conf.aws_default_region, conf.aws_access_key_id, conf.aws_secret_access_key[0:8]))
+        aws_region = conf.aws_region if conf.aws_region else conf.aws_default_region
+        log.info("Dynamodb setup against region:%s access_key_id:%s, aws_secret:%s***" % (aws_region, conf.aws_access_key_id, conf.aws_secret_access_key[0:8]))
         db = boto3.resource(
             'dynamodb',
-            region_name=conf.aws_default_region,
+            region_name=aws_region,
             aws_access_key_id=conf.aws_access_key_id,
             aws_secret_access_key=conf.aws_secret_access_key
         )
